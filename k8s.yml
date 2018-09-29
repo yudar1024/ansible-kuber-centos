@@ -1,0 +1,9 @@
+---
+- hosts: masters
+  remote_user: root
+  tasks:
+    - debug:
+        msg: 'before run master role'
+    - include_role:
+        name: "common"
+ 

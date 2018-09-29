@@ -1,0 +1,4 @@
+[masters]
+master1 192.168.143.129
+[nodes]
+master2 192.168.143.127

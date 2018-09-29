@@ -1,0 +1,36 @@
+- name: 'disable selinux' 
+  selinux:
+    state: disabled
+- name: 'stop firewalld'
+  firewalld:
+    state: disabled
+    immediate: yes
+- name: 'stop system swap'
+  sysctl:
+    name: vm.swappiness
+    value: 0
+    state: present
+    reload: yes
+- name: 'stop system swap in fstab'
+  command: "sed \'/swap.img/d\' -i /etc/fstab"
+- name: 'set ip forward'
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes
+- name: 'set ip6table forward'
+  sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes
+- name: 'set iptable forward'
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptabless
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes
