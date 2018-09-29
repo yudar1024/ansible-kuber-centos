@@ -1,4 +1,6 @@
 # roles/example/tasks/main.yml
+- debug:
+    msg: "{{ansible_distribution}}"
 - name: 'import centos'
   import_tasks: centos.yml
   when: ansible_distribution == 'CentOS'
