@@ -1,5 +1,6 @@
 - name: 'disable selinux' 
   selinux:
+    policy: targeted
     state: disabled
 - name: 'stop firewalld'
   firewalld:
@@ -12,7 +13,7 @@
     state: present
     reload: yes
 - name: 'stop system swap in fstab'
-  command: "sed \'/swap.img/d\' -i /etc/fstab"
+  command: "sed \'/dev/mapper/centos-swap/d\' -i /etc/fstab"
 - name: 'set ip forward'
   sysctl:
     name: net.ipv4.ip_forward
