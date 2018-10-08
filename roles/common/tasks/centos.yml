@@ -12,26 +12,36 @@
     value: 0
     state: present
     reload: yes
-- name: 'stop system swap in fstab'
-  command: "sed \'/dev/mapper/centos-swap/d\' -i /etc/fstab"
-- name: 'set ip forward'
+- name: 'delete system swap in /etc/fstab'
+  replace: 
+    path: "/etc/fstab"
+    regexp: '^/dev/mapper/centos-swap .*'
+- name: 'set ip4 forward'
   sysctl:
     name: net.ipv4.ip_forward
     value: 1
     sysctl_set: yes
     state: present
     reload: yes
-- name: 'set ip6table forward'
+- name: 'set ip6 forward'
   sysctl:
-    name: net.bridge.bridge-nf-call-ip6tables
+    name: net.ipv6.conf.all.forwarding
     value: 1
     sysctl_set: yes
     state: present
     reload: yes
-- name: 'set iptable forward'
-  sysctl:
-    name: net.bridge.bridge-nf-call-iptabless
-    value: 1
-    sysctl_set: yes
-    state: present
-    reload: yes
+# 关于bridge-nf-call-iptables的启用取决于是否将容器连接到Linux bridge或使用其他一些机制(如 SDN vSwitch)。
+# - name: 'set ip6table forward'
+#   sysctl:
+#     name: net.bridge.bridge-nf-call-ip6tables
+#     value: 1
+#     sysctl_set: yes
+#     state: present
+#     reload: no
+# - name: 'set iptable forward'
+#   sysctl:
+#     name: net.bridge.bridge-nf-call-iptabless
+#     value: 1
+#     sysctl_set: yes
+#     state: present
+#     reload: no
