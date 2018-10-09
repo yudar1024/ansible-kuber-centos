@@ -45,3 +45,23 @@
 #     sysctl_set: yes
 #     state: present
 #     reload: no
+- name: 'create kubernetes foladers'
+  file:
+    path: '/etc/kubernetes/ssl'
+    state: directory
+
+- name: 'copy ca key files'
+  copy:
+    src: "ca-key.pem"
+    dest: '/etc/kubernetes/ssl/ca-key.pem'
+
+- name: 'copy ca files'
+  copy:
+    src: "ca.pem"
+    dest: '/etc/kubernetes/ssl/ca.pem'
+
+- name: 'copy ca.csr files'
+  copy:
+    src: "ca.csr"
+    dest: '/etc/kubernetes/ssl/ca.csr'
+    

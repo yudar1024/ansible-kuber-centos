@@ -6,4 +6,6 @@
         msg: 'before run master role'
     - include_role:
         name: "common"
+    - include_role:
+        name: "dockerinstall"
  

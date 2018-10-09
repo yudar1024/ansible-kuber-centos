@@ -1,0 +1,29 @@
+- name: 'check ali docker repo existing'
+  stat:
+    path: '/etc/yum.repos.d/docker-ce.repo'
+  register: stat_result
+
+- name: 'add ali docker repo'
+  copy:
+    src: 'docker-ce.repo'
+    dest: '/etc/yum.repos.d/docker-ce.repo'
+  when: stat_result.stat.exists == False
+
+- debug:
+    msg: "ali docker repo already exist , ignore copy repo file"
+  when: stat_result.stat.exists == True
+- name: 'install device-mapper-persistent-data,lvm2'
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - device-mapper-persistent-data
+    - lvm2
+- name: 'install docker-ce-17.03.2.ce'
+  command: 'yum install -y --setopt=obsoletes=0 docker-ce-17.03.2.ce'
+- name: 'enable and start docker service'
+  systemd:
+    enabled: yes
+    name: docker
+    state: started
+    
