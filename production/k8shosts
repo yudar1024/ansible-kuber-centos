@@ -1,4 +1,12 @@
 [masters]
 192.168.143.129
+
 [nodes]
 192.168.143.127
+
+[etcd]
+masters
+
+[k8s]
+masters
+nodes

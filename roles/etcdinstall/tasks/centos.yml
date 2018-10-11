@@ -1,0 +1,19 @@
+- name: 'make etcd cert config file'
+  local_action:
+    module: template
+    src: etcd-csr.json.j2
+    dest: etcd-csr.json
+
+- name: 'create etcd cert pem files'
+  local_action: shell cfssl gencert -ca roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes etcd-csr.json | cfssljson -bare etcd
+
+- name: 'copy etcd key files'
+  copy:
+    src: "etcd-key.pem"
+    dest: '/etc/kubernetes/ssl/etcd-key.pem'
+
+- name: 'copy etcd cert files'
+  copy:
+    src: "etcd.pem"
+    dest: '/etc/kubernetes/ssl/etcd.pem'
+

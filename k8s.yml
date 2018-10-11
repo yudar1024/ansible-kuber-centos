@@ -1,11 +1,24 @@
 ---
-- hosts: masters
+- hosts: k8s
   remote_user: root
   tasks:
     - debug:
-        msg: 'before run master role'
-    - include_role:
-        name: "common"
-    - include_role:
-        name: "dockerinstall"
- 
+        msg: 'start common tasks'
+  roles:
+    - common
+
+- hosts: k8s
+  remote_user: root
+  tasks:
+    - debug:
+        msg: 'install docker to k8s hosts'
+  roles:
+    - dockerinstall
+
+- hosts: etcd
+  remote_user: root
+  tasks:
+    - debug:
+        msg: 'start setup etcd to etcd hosts'
+  roles:
+    - etcdinstall
