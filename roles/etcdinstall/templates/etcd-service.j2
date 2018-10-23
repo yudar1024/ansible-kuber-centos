@@ -1,0 +1,37 @@
+# etcd-1
+# /etc/systemd/system/etcd.service
+
+
+[Unit]
+Description=Etcd Server
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WorkingDirectory=/opt/etcd/
+User=etcd
+# set GOMAXPROCS to number of processors
+ExecStart=/usr/bin/etcd \
+  --name=etcd1 \
+  --cert-file=/etc/kubernetes/ssl/etcd.pem \
+  --key-file=/etc/kubernetes/ssl/etcd-key.pem \
+  --peer-cert-file=/etc/kubernetes/ssl/etcd.pem \
+  --peer-key-file=/etc/kubernetes/ssl/etcd-key.pem \
+  --trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
+  --peer-trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
+  --initial-advertise-peer-urls=https://{{ansible_default_ipv4['address']}}:2380 \
+  --listen-peer-urls=https://{{ansible_default_ipv4['address']}}:2380 \
+  --listen-client-urls=https://{{ansible_default_ipv4['address']}}:2379,http://127.0.0.1:2379 \
+  --advertise-client-urls=https://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:2379 \
+  --initial-cluster-token=k8s-etcd-cluster \
+  --initial-cluster={% for node in groups["etcd"] %}etcd{{loop.index}}=https://{{node}}{% if not loop.last %}, {% endif  %}{% endfor %} \
+  --initial-cluster-state=new \
+  --data-dir=/opt/etcd/
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

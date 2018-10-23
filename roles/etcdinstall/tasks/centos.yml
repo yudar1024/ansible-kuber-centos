@@ -12,8 +12,50 @@
     src: "etcd-key.pem"
     dest: '/etc/kubernetes/ssl/etcd-key.pem'
 
+- name: 'set etcd key permission'
+  file:
+    path: '/etc/kubernetes/ssl/etcd-key.pem'
+    mode: '644'
+
 - name: 'copy etcd cert files'
   copy:
     src: "etcd.pem"
     dest: '/etc/kubernetes/ssl/etcd.pem'
 
+- name: 'copy etcd files'
+  copy:
+    src: "etcd"
+    dest: '/usr/bin/etcd'
+- name: 'copy etcdctl files'
+  copy:
+    src: "etcdctl"
+    dest: '/usr/bin/etcdctl'
+
+- name: 'check /opt/etcd folder exsit'
+  stat:
+    path: /opt/etcd
+  register: p
+  tags: temp
+- debug:
+    msg: "Path exists and is a directory"
+  when: p.stat.isdir is defined and p.stat.isdir
+  tags: 'temp'
+
+- name: 'create etcd data folader'
+  file:
+    path: '/opt/etcd'
+    state: directory
+  when: p.stat.isdir is defined and p.stat.isdir
+
+- name: 'make etcd systemd config file'
+  local_action:
+    module: template
+    src: etcd-service.j2
+    dest: "etcd-{{ansible_default_ipv4[\"address\"]}}.service"
+  tags: 'temp'
+
+- name: 'copy etcd systemd files'
+  copy:
+    src: "etcd-{{ansible_default_ipv4[\"address\"]}}.service"
+    dest: '/etc/systemd/system/etcd.service'
+  tags: temp
