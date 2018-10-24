@@ -1,0 +1,53 @@
+- name: copy kube-apiserver
+  copy:
+    src: "kube-apiserver"
+    dest: '/usr/local/bin/kube-apiserver'
+    mode: "775"
+- name: copy kube-controller-manager
+  copy:
+    src: "kube-controller-manager"
+    dest: '/usr/local/bin/kube-controller-manager'
+    mode: "775"
+- name: copy kube-scheduler
+  copy:
+    src: "kube-scheduler"
+    dest: '/usr/local/bin/kube-scheduler'
+    mode: "775"
+- name: copy kubectl
+  copy:
+    src: "kubectl"
+    dest: '/usr/local/bin/kubectl'
+    mode: "775"
+# - name: copy kubelet
+#   copy:
+#     src: "kubelet"
+#     dest: '/usr/local/bin/kubelet'
+#     mode: "775"
+# - name: copy kubeadm
+#   copy:
+#     src: "kubeadm"
+#     dest: '/usr/local/bin/kubeadm'
+#     mode: "775"
+- name: copy admin-key.pem
+  copy:
+    src: "admin-key.pem"
+    dest: '/etc/kubernetes/ssl/admin-key.pem'
+- name: copy admin.pem
+  copy:
+    src: "admin.pem"
+    dest: '/etc/kubernetes/ssl/admin.pem'
+
+- name: '配置k8s集群'
+  shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443
+
+- name: '配置客户端认证'
+  shell: kubectl config set-credentials admin --client-certificate=/etc/kubernetes/ssl/admin.pem --embed-certs=true --client-key=/etc/kubernetes/ssl/admin-key.pem
+
+- name: '配置客户端认证'
+  shell: kubectl config set-context kubernetes --cluster=kubernetes --embed-certs=true --user=admin
+
+- name: '配置客户端认证'
+  shell: kubectl config use-context kubernetes
+ 
+
+    
