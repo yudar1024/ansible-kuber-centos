@@ -1,12 +1,9 @@
 [masters]
 192.168.143.129
 
-[nodes]
-192.168.143.127
-
-[etcd]
+[etcd:children]
 masters
 
-[k8s]
+[k8s:children]
 masters
-nodes
+

@@ -59,3 +59,11 @@
     src: "etcd-{{ansible_default_ipv4[\"address\"]}}.service"
     dest: '/etc/systemd/system/etcd.service'
   tags: temp
+
+- name: 'enable etcd service'
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: etcd
+    user: root
+

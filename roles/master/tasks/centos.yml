@@ -48,6 +48,139 @@
 
 - name: '配置客户端认证'
   shell: kubectl config use-context kubernetes
- 
 
+- name: '生成kubernetes csr json请求文件'
+  local_action:
+    module: template
+    src: 'kubernetes.csr.json.j2'
+    dest: "kubernetes-csr.json"
+  tags: 'k8scert'
     
+- name: '生成kubernetes证书'
+  local_action: shell cfssl gencert -ca=roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes kubernetes-csr.json | cfssljson -bare kubernetes
+  tags: 'k8scert'
+
+- name: copy kubernetes-key.pem
+  copy:
+    src: "kubernetes-key.pem"
+    dest: '/etc/kubernetes/ssl/kubernetes-key.pem'
+  tags: 'k8scert'
+- name: copy kubernetes.pem
+  copy:
+    src: "kubernetes.pem"
+    dest: '/etc/kubernetes/ssl/kubernetes.pem'
+  tags: 'k8scert'
+
+- name: copy encryption-config file
+  copy:
+    src: "encryption-config.yaml"
+    dest: '/etc/kubernetes/encryption-config.yaml'
+  tags: 'k8scert'
+
+- name: copy audit-policy file
+  copy:
+    src: "audit-policy.yaml"
+    dest: '/etc/kubernetes/audit-policy.yaml'
+  tags: 'k8scert'
+
+- name: '生成api server service文件'
+  local_action:
+    module: template
+    src: 'kube-apiserver.service.j2'
+    dest: "kube-apiserver.service"
+  tags: 'masterservice'
+
+- name: copy api-server service file
+  copy:
+    src: "kube-apiserver.service"
+    dest: '/etc/systemd/system/kube-apiserver.service'
+  tags: 'masterservice'
+
+
+- name: 'enable api-server service'
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: kube-apiserver
+    user: root
+
+
+- name: '生成controller-manager service文件'
+  local_action:
+    module: template
+    src: 'kube-controller-manager.service.j2'
+    dest: "kube-controller-manager.service"
+  tags: 'masterservice'
+
+
+- name: copy controller-manager service file
+  copy:
+    src: "kube-controller-manager.service"
+    dest: '/etc/systemd/system/kube-controller-manager.service'
+  tags: 'masterservice'
+
+- name: 'enable controller-manager service'
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: controller-manager
+    user: root
+
+
+- name: copy kube-scheduler service file
+  copy:
+    src: "kube-scheduler.service"
+    dest: '/etc/systemd/system/kube-scheduler.service'
+  tags: 'masterservice'
+
+- name: 'enable kube-scheduler service'
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: kube-scheduler
+    user: root
+
+- name: copy kubectl file
+  copy:
+    src: "kubectl"
+    dest: '/usr/local/bin/kubectl'
+    mode: 775
+  tags: 'masterservice'
+
+- name: '创建RBAC 权限，只需创建一次'
+  shell: kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
+  run_once: true #只执行一次
+  delegate_to: 192.168.143.129 #可以结合delegate_to，表示只在192.168.143.129这台主机上面执行。如果不加这句话，第一个执行的主机会负责执行此条task。
+  tags: 'masterservice'
+
+- name: copy kubeadm file
+  copy:
+    src: "kubeadm"
+    dest: '/usr/local/bin/kubeadm'
+    mode: 775
+  tags: 'masterservice'
+
+- name: '生成 bootstrap 的token'
+  shell: "kubeadm token create --description kubelet-bootstrap-token --groups system:bootstrappers:{{ansible_hostname}} --kubeconfig ~/.kube/config"
+  register: bootstrap_token
+
+- debug:
+    msg: {{bootstrap_token.stdout}}
+
+- name: 'bootstrap 配置集群参数'
+  shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
+
+
+- name: '配置关联'
+  shell: "kubectl config set-credentials kubelet-bootstrap --token={{bootstrap_token.stdout}} --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
+
+- name: '配置默认关联'
+  shell: "kubectl config use-context default --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
+
+- name: copy bootstrap.kubeconfig file
+  copy:
+    src: "{{ansible_hostname}}-bootstrap.kubeconfig"
+    dest: '/etc/kubernetes/bootstrap.kubeconfig'
+    mode: 775
+    remote_src: yes
+ 

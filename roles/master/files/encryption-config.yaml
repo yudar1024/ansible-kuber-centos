@@ -1,0 +1,12 @@
+kind: EncryptionConfig
+apiVersion: v1
+resources:
+  - resources:
+      - secrets
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              # use head -c 16 /dev/urandom | od -An -t x | tr -d ' ' to create secret
+              secret: f798a24602022dfde574c0e02771f6bc
+      - identity: {}

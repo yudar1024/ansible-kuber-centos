@@ -22,3 +22,11 @@
         msg: 'start setup etcd to etcd hosts'
   roles:
     - etcdinstall
+
+- hosts: masters
+  remote_user: root
+  tasks:
+    - debug:
+        msg: 'start setup k8s masters'
+  roles:
+    - master
