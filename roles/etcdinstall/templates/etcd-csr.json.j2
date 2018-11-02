@@ -2,10 +2,7 @@
     "CN": "etcd",
     "hosts": [
         "127.0.0.1",
-    {% for node in groups["etcd"] %}"{{node}}"
-        {% if not loop.last %}, 
-        {% endif  %}
-    {% endfor %}
+    {% for node in groups["etcd"] %}"{{node}}"{% if not loop.last %},{% endif  %}{% endfor %}
     ],
     "key": {
         "algo": "rsa",

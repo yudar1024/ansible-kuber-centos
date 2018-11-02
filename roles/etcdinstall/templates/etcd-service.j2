@@ -1,7 +1,3 @@
-# etcd-1
-# /etc/systemd/system/etcd.service
-
-
 [Unit]
 Description=Etcd Server
 After=network.target
@@ -11,10 +7,10 @@ Wants=network-online.target
 [Service]
 Type=notify
 WorkingDirectory=/opt/etcd/
-User=etcd
+User=root
 # set GOMAXPROCS to number of processors
 ExecStart=/usr/bin/etcd \
-  --name=etcd1 \
+  --name=etcd{{ansible_hostname}} \
   --cert-file=/etc/kubernetes/ssl/etcd.pem \
   --key-file=/etc/kubernetes/ssl/etcd-key.pem \
   --peer-cert-file=/etc/kubernetes/ssl/etcd.pem \
@@ -26,7 +22,7 @@ ExecStart=/usr/bin/etcd \
   --listen-client-urls=https://{{ansible_default_ipv4['address']}}:2379,http://127.0.0.1:2379 \
   --advertise-client-urls=https://{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:2379 \
   --initial-cluster-token=k8s-etcd-cluster \
-  --initial-cluster={% for node in groups["etcd"] %}etcd{{loop.index}}=https://{{node}}{% if not loop.last %}, {% endif  %}{% endfor %} \
+  --initial-cluster={% for host in groups.etcd %}etcd{{hostvars[host]['ansible_hostname']}}=https://{{hostvars[host]['ansible_default_ipv4']['address']}}:2380{% if not loop.last %},{% endif  %}{% endfor %} \
   --initial-cluster-state=new \
   --data-dir=/opt/etcd/
 Restart=on-failure

@@ -183,4 +183,37 @@
     dest: '/etc/kubernetes/bootstrap.kubeconfig'
     mode: 775
     remote_src: yes
+
+- name: 'config RBAC permissions'
+  shell: kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --group=system:bootstrappers
+  run_once: true
+
+# 创建自动批准相关 CSR 请求的 ClusterRole
  
+- name: copy tls-instructs-csr.yaml
+  copy:
+    src: "tls-instructs-csr.yaml"
+    dest: '/etc/kubernetes/tls-instructs-csr.yaml'
+
+- name: create cluster role
+  shell: kubectl apply -f /etc/kubernetes/tls-instructs-csr.yaml
+  run_once: true
+
+- name: show cluster role
+  shell: kubectl describe ClusterRole/system:certificates.k8s.io:certificatesigningrequests:selfnodeserver
+  run_once: true
+  
+# 自动批准 system:bootstrappers 组用户 TLS bootstrapping 首次申请证书的 CSR 请求
+- name: show cluster role
+  shell: kubectl create clusterrolebinding node-client-auto-approve-csr --clusterrole=system:certificates.k8s.io:certificatesigningrequests:nodeclient --group=system:bootstrappers
+  run_once: true
+
+# 自动批准 system:nodes 组用户更新 kubelet 自身与 apiserver 通讯证书的 CSR 请求
+- name: show cluster role
+  shell: kubectl create clusterrolebinding node-client-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeclient --group=system:nodes
+  run_once: true
+
+# 自动批准 system:nodes 组用户更新 kubelet 10250 api 端口证书的 CSR 请求
+- name: show cluster role
+  shell: kubectl create clusterrolebinding node-server-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeserver --group=system:nodes
+  run_once: true
