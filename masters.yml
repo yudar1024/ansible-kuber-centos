@@ -1,0 +1,12 @@
+---
+- hosts: masters
+  remote_user: root
+  debugger: on_failed
+  vars:
+    host_var: "{{hostvars[\"192.168.143.129\"]}}"
+  tasks:
+    - debug:
+        msg: 'start masters deploy tasks'
+  roles:
+    - dockerinstall
+    - master

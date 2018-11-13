@@ -2,7 +2,7 @@
     "CN": "kubernetes",
     "hosts": [
       "127.0.0.1",
-      {% for node in groups["masters"] %}"{{node}}",
+      {% for node in groups.k8s %}"{{hostvars[node]['ansible_ssh_host']}}",
       {% endfor %}
       "10.254.0.1",
       "kubernetes",

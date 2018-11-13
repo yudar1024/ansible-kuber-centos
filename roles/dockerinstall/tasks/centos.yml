@@ -1,3 +1,10 @@
+- name: Check if Docker Service Exists
+  shell: "if systemctl list-units | grep -q docker ;then echo False; else echo True; fi;"
+  register: service_exists
+
+- debug:
+    msg: "{{service_exists}}"
+
 - name: 'check ali docker repo existing'
   stat:
     path: '/etc/yum.repos.d/docker-ce.repo'
@@ -11,7 +18,8 @@
 
 - debug:
     msg: "ali docker repo already exist , ignore copy repo file"
-  when: stat_result.stat.exists == True
+  when: stat_result.stat.exists == True 
+
 - name: 'install device-mapper-persistent-data,lvm2'
   yum:
     name: "{{ packages }}"
@@ -19,21 +27,30 @@
     packages:
     - device-mapper-persistent-data
     - lvm2
+  when: service_exists.stdout=="True"
+
 - name: 'install docker-ce-18.06.0.ce-3.el7'
   command: 'yum install -y --setopt=obsoletes=0 docker-ce-18.06.0.ce-3.el7'
+  when: service_exists.stdout=="True"
+
 - name: 'create /etc/docker foladers'
   file:
     path: '/etc/docker'
     state: directory
+  when: service_exists.stdout=="True"
+
 - name: 'copy daemon.json to /etc/docker'
   copy:
     src: 'daemon-3.10.json'
     dest: '/etc/docker/daemon.json'
+  when: service_exists.stdout=="True"
+
 - name: 'enable and start docker service'
   systemd:
     daemon_reload: yes
     enabled: yes
     name: docker
-    state: started
+    state: restarted
+  when: service_exists.stdout=="True"
 
     

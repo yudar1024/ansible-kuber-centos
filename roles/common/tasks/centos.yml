@@ -1,3 +1,7 @@
+- name: set timezone to Asia/Shanghai
+  timezone:
+    name: Asia/Shanghai
+
 - name: 'disable selinux' 
   selinux:
     policy: targeted

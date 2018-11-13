@@ -1,3 +1,5 @@
+# 开始生成k8s证书
+
 - name: copy kube-apiserver
   copy:
     src: "kube-apiserver"
@@ -37,16 +39,16 @@
     src: "admin.pem"
     dest: '/etc/kubernetes/ssl/admin.pem'
 
-- name: '配置k8s集群'
+- name: '配置k8s集群，CA 证书'
   shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443
 
 - name: '配置客户端认证'
   shell: kubectl config set-credentials admin --client-certificate=/etc/kubernetes/ssl/admin.pem --embed-certs=true --client-key=/etc/kubernetes/ssl/admin-key.pem
 
-- name: '配置客户端认证'
+- name: '创建客户端下文'
   shell: kubectl config set-context kubernetes --cluster=kubernetes --embed-certs=true --user=admin
 
-- name: '配置客户端认证'
+- name: '配置客户端上下文'
   shell: kubectl config use-context kubernetes
 
 - name: '生成kubernetes csr json请求文件'
@@ -83,6 +85,7 @@
     dest: '/etc/kubernetes/audit-policy.yaml'
   tags: 'k8scert'
 
+
 - name: '生成api server service文件'
   local_action:
     module: template
@@ -117,7 +120,7 @@
   copy:
     src: "kube-controller-manager.service"
     dest: '/etc/systemd/system/kube-controller-manager.service'
-  tags: 'masterservice'
+
 
 - name: 'enable controller-manager service'
   systemd:
@@ -131,7 +134,7 @@
   copy:
     src: "kube-scheduler.service"
     dest: '/etc/systemd/system/kube-scheduler.service'
-  tags: 'masterservice'
+
 
 - name: 'enable kube-scheduler service'
   systemd:
@@ -145,27 +148,27 @@
     src: "kubectl"
     dest: '/usr/local/bin/kubectl'
     mode: 775
-  tags: 'masterservice'
+
 
 - name: '创建RBAC 权限，只需创建一次'
   shell: kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
   run_once: true #只执行一次
   delegate_to: 192.168.143.129 #可以结合delegate_to，表示只在192.168.143.129这台主机上面执行。如果不加这句话，第一个执行的主机会负责执行此条task。
-  tags: 'masterservice'
+ 
 
 - name: copy kubeadm file
   copy:
     src: "kubeadm"
     dest: '/usr/local/bin/kubeadm'
     mode: 775
-  tags: 'masterservice'
+
 
 - name: '生成 bootstrap 的token'
   shell: "kubeadm token create --description kubelet-bootstrap-token --groups system:bootstrappers:{{ansible_hostname}} --kubeconfig ~/.kube/config"
   register: bootstrap_token
 
 - debug:
-    msg: {{bootstrap_token.stdout}}
+    msg: "{{bootstrap_token.stdout}}"
 
 - name: 'bootstrap 配置集群参数'
   shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
