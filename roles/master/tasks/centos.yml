@@ -251,6 +251,7 @@
   delegate_to: "{{default_run_once_host}}" #可以结合delegate_to，表示只在192.168.143.129这台主机上面执行。如果不加这句话，第一个执行的主机会负责执行此条task。
   tags: 
     - master
+    - rbac
 
 
 
@@ -259,26 +260,43 @@
   register: bootstrap_token
   tags: 
     - master
+    - boostrap
+    
 
-- debug:
+
+- name: bootstrap token 值
+  debug:
     msg: "{{bootstrap_token.stdout}}"
   tags: 
     - master
+    - boostrap
+
 
 - name: 'bootstrap 配置集群参数'
   shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
   tags: 
     - master
+    - boostrap
 
 - name: '配置 credentials 关联'
   shell: "kubectl config set-credentials kubelet-bootstrap --token={{bootstrap_token.stdout}} --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
   tags: 
     - master
+    - boostrap
+
+- name: '创建默认上下文'
+  shell: kubectl config set-context default --cluster=kubernetes --user=kubelet-bootstrap --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
+  tags:
+    - master
+    - boostrap
+    - watch
 
 - name: '配置context默认关联'
   shell: "kubectl config use-context default --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
   tags: 
     - master
+    - boostrap
+    - watch
 
 - name: copy bootstrap.kubeconfig file
   copy:
@@ -288,12 +306,16 @@
     remote_src: yes
   tags: 
     - master
+    - boostrap
+    - watch
 
-- name: 'config RBAC permissions'
+- name: '配置 RBAC 权限'
   shell: kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --group=system:bootstrappers
   run_once: true
   tags: 
     - master
+    - boostrap
+    - watch
 
 # 创建自动批准相关 CSR 请求的 ClusterRole
  
@@ -303,36 +325,48 @@
     dest: '/etc/kubernetes/tls-instructs-csr.yaml'
   tags: 
     - master
+    - boostrap
+    - watch
 
-- name: create cluster role
+- name: apply tls-instructs-csr.yaml
   shell: kubectl apply -f /etc/kubernetes/tls-instructs-csr.yaml
   run_once: true
   tags: 
     - master
+    - boostrap
+    - watch
 
-- name: show cluster role
+- name: describe cluster selfnodeserver
   shell: kubectl describe ClusterRole/system:certificates.k8s.io:certificatesigningrequests:selfnodeserver
   run_once: true
   tags: 
     - master
+    - boostrap
+    - watch
 
 # 自动批准 system:bootstrappers 组用户 TLS bootstrapping 首次申请证书的 CSR 请求
-- name: show cluster role
+- name: 创建 cluster role binding node-client-auto-approve-csr
   shell: kubectl create clusterrolebinding node-client-auto-approve-csr --clusterrole=system:certificates.k8s.io:certificatesigningrequests:nodeclient --group=system:bootstrappers
   run_once: true
   tags: 
     - master
+    - boostrap
+    - watch
 
 # 自动批准 system:nodes 组用户更新 kubelet 自身与 apiserver 通讯证书的 CSR 请求
-- name: show cluster role
+- name: 创建 cluster binding node-client-auto-renew-crt
   shell: kubectl create clusterrolebinding node-client-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeclient --group=system:nodes
   run_once: true
   tags: 
     - master
+    - boostrap
+    - watch
 
 # 自动批准 system:nodes 组用户更新 kubelet 10250 api 端口证书的 CSR 请求
-- name: show cluster role
+- name: 创建 role binding  node-server-auto-renew-crt
   shell: kubectl create clusterrolebinding node-server-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeserver --group=system:nodes
   run_once: true
   tags: 
     - master
+    - boostrap
+    - watch
