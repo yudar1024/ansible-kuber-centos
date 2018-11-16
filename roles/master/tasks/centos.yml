@@ -243,6 +243,9 @@
     - master
     - scheduler
 
+- name: 验证master节点状态
+  shell: kubectl get componentstatuses
+  tags: master
 
 
 - name: '创建RBAC 权限，只需创建一次'

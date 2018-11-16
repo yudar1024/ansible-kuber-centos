@@ -38,6 +38,8 @@ ExecStart=/usr/local/bin/kube-apiserver \
   --tls-cert-file=/etc/kubernetes/ssl/kubernetes.pem \
   --tls-private-key-file=/etc/kubernetes/ssl/kubernetes-key.pem \
   --enable-bootstrap-token-auth \
+  --request-timeout=2m \
+  --kubelet-timeout=10s \
   --v=1
 Restart=on-failure
 RestartSec=5
