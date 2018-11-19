@@ -1,17 +1,62 @@
+# create nginx config 
+- name: 'create nginx config folader'
+  file:
+    path: '/etc/nginx'
+    state: directory
+  tags:
+    - nginx
+    - nodes
+
+- name: 'create nginx config'
+  local_action:
+    module: template
+    src: nginx.conf.j2
+    dest: nginx.conf
+  tags:
+    - nginx
+    - config
+    - nodes
+
+- name: 'copy nginx config file'
+  copy:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+  tags:
+    - nginx
+    - nodes
+
+- name: 'copy nginx serivce file'
+  copy:
+    src: nginx-proxy.service
+    dest: /etc/systemd/system/nginx-proxy.service
+  tags:
+    - nginx
+    - nodes
+
+- name: 'enable nginx service'
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: nginx-proxy
+    state: restarted
+  tags:
+    - nginx
+    - nodes    
+
 - name: 'create kubelet folader'
   file:
     path: '/var/lib/kubelet'
     state: directory
   tags:
     - kubelet
-    - masterandnode
+    - nodes
 
 - name: 'check kubelet existing'
   stat:
     path: '/usr/local/bin/kubelet'
   register: stat_result
   tags:
-    - masterandnode
+    - nodes
 
 - name: 'copy kubelet file'
   copy:
@@ -23,7 +68,7 @@
   when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - masterandnode
+    - nodes
 
 - name: 'create kubelet service file'
   local_action:
@@ -33,7 +78,7 @@
   tags:
     - kubelet
     - config
-    - masterandnode
+    - nodes
 
 - name: 'create kubelet config json file'
   local_action:
@@ -43,7 +88,7 @@
   tags:
     - kubelet
     - config
-    - masterandnode
+    - nodes
 
 - name: 'copy kubelet service file'
   copy:
@@ -52,7 +97,7 @@
   when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - masterandnode
+    - nodes
 
 - name: 'copy kubelet config json file'
   copy:
@@ -61,7 +106,18 @@
   when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - masterandnode
+    - nodes
+
+
+- name: Wait 10 seconds for masters api server port 6443 to become open
+  wait_for:
+    port: 6443
+    host: "{{ hostvars['item']['ansible_ssh_host'] }}"
+    delay: 10
+    state: drained
+  # loop: "{{query('inventory_hostnames', 'masters')}}"
+    loop: "{{groups['masters']}}"
+  connection: local
 
 - name: 'enable kubelet service'
   systemd:
@@ -71,96 +127,27 @@
     state: restarted
   tags:
     - kubelet
-    - masterandnode
+    - nodes
 
 - name: 'ls kubelet certification files '
   shell: 'ls -lt /etc/kubernetes/ssl/kubelet*'
   tags:
     - kubelet
-    - masterandnode
-
-# - name: 'generate kube-proxy cert files'
-#   local_action: 'shell cfssl gencert -ca=roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes  roles/masterandnode/files/kube-proxy-csr.json | cfssljson -bare kube-proxy'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 'create kubelet folader'
-#   file:
-#     path: '/etc/kubernetes/ssl'
-#     state: directory
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 'copy kube-proxy-key.pem file'
-#   copy:
-#     src: kube-proxy-key.pem
-#     dest: /etc/kubernetes/ssl/kube-proxy-key.pem
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 'copy kube-proxy.pem file'
-#   copy:
-#     src: kube-proxy.pem
-#     dest: /etc/kubernetes/ssl/kube-proxy.pem
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 添加 kube-proxy 在集群中的配置
-#   shell: 'kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 配置  kube-proxy 客户端认证
-#   shell: 'kubectl config set-credentials kube-proxy --client-certificate=/etc/kubernetes/ssl/kube-proxy.pem --client-key=/etc/kubernetes/ssl/kube-proxy-key.pem --embed-certs=true --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
+    - nodes
 
 
-# - name: 关联context 和集群
-#   shell: 'kubectl config set-context default --cluster=kubernetes --user=kube-proxy --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
 
 
-# - name: 关联default context 和集群
-#   shell: 'kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
 
-# - debug:
-#     msg: "{{hostvars[groups.masterandnode[0]]['ansible_ssh_host']}}"
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-#     - fetch
 
-# - name: 从远程拷贝回生成的 kube-proxy.kubeconfig
-#   fetch:
-#     src: /root/kube-proxy.kubeconfig
-#     dest: ./kube-proxy.kubeconfig
-#     flat: yes
-#   run_once: yes
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-#     - fetch
 
 - name: 'copy kube-proxy.kubeconfig to /etc/kubernetes/'
   copy:
     src: kube-proxy.kubeconfig
     dest: /etc/kubernetes/kube-proxy.kubeconfig
-    remote_src: yes
   tags:
     - kubeproxy
-    - masterandnode
+    - nodes
 
 - name: 安装IP set 相关工具
   yum:
@@ -172,7 +159,7 @@
     - conntrack-tools.x86_64
   tags:
     - kubeproxy
-    - masterandnode
+    - nodes
 
 - name: '生成kube-proxy service文件'
   local_action:
@@ -180,7 +167,7 @@
     src: 'kube-proxy.config.yaml.j2'
     dest: "kube-proxy.config-{{ansible_default_ipv4['address']}}.yaml"
   tags: 
-    - masterandnode
+    - nodes
     - config
     - kubeproxy
 
@@ -190,7 +177,7 @@
     dest: /etc/kubernetes/kube-proxy.config.yaml
   tags:
     - kubeproxy
-    - masterandnode
+    - nodes
 
 - name: 'create kube-proxy folader'
   file:
@@ -198,15 +185,9 @@
     state: directory
   tags:
     - kubeproxy
-    - masterandnode
+    - nodes
 
-- name: 'copy kube-proxy service file'
-  copy:
-    src: kube-proxy.service
-    dest: /etc/systemd/system/kube-proxy.service
-  tags:
-    - kubeproxy
-    - masterandnode
+
 
 - name: 'check kube-proxy existing'
   stat:
@@ -214,7 +195,7 @@
   register: kube_proxy_result
   tags:
     - kubeproxy
-    - masterandnode
+    - nodes
     - temp
 
 - name: 'copy kube-proxy file'
@@ -227,8 +208,8 @@
   when: kube_proxy_result.stat.exists == False
   tags:
     - kubeproxy
-    - masterandnode
-    - temp
+    - nodes
+
 
 - name: 'copy kube-proxy serivce file'
   copy:
@@ -238,8 +219,8 @@
     # mode: u+rw,g-wx,o-rwx
   tags:
     - kubeproxy
-    - masterandnode
-    - temp
+    - nodes
+
 
 - name: 'enable kube-proxy service'
   systemd:
@@ -249,5 +230,4 @@
     state: restarted
   tags:
     - kubeproxy
-    - masterandnode
-    - temp
+    - nodes
