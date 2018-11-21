@@ -6,10 +6,18 @@
   selinux:
     policy: targeted
     state: disabled
+
+- name: populate service facts
+  service_facts:
+
+- debug:
+    var: ansible_facts.services
+
 - name: 'disable firewalld'
-  firewalld:
-    state: disabled
-    immediate: yes
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
 # - name: 'stop system swap'
 #   sysctl:
 #     name: vm.swappiness
@@ -74,4 +82,17 @@
   copy:
     src: "ca.csr"
     dest: '/etc/kubernetes/ssl/ca.csr'
+- name: 'copy cssl file to /usr/local/bin '
+  local_action:
+    module: copy
+    src: cfssl_linux-amd64
+    dest: /usr/local/bin/cfssl
+    mode: "u=rwx,g=rx,o=rx"
+- name: 'copy cssljson file to /usr/local/bin '
+  local_action:
+    module: copy
+    src: cfssljson_linux-amd64
+    dest: /usr/local/bin/cfssljson
+    mode: "u=rwx,g=rx,o=rx"
+    
     

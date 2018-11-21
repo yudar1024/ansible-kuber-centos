@@ -1,21 +1,21 @@
 [masters]
-k8smaster1 ansible_ssh_host=192.168.143.129
-k8smaster2 ansible_ssh_host=192.168.143.130
+k8smaster1 ansible_ssh_host=192.168.37.129
+k8smasterandnode ansible_ssh_host=192.168.37.130
 
 [etcd]
-etcdnode1 ansible_ssh_host=192.168.143.131
+etcdnode1 ansible_ssh_host=192.168.37.131
 
 [etcd:children]
 masters
 
 
 [node]
-k8snode1 ansible_ssh_host=192.168.143.131
+k8snode ansible_ssh_host=192.168.37.131
 
 [k8s:children]
 masters
 node
 
 [masterandnode]
-k8smaster2 ansible_ssh_host=192.168.143.130
+k8smasterandnode ansible_ssh_host=192.168.37.130
 

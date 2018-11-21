@@ -194,7 +194,7 @@
     daemon_reload: yes
     enabled: yes
     name: kube-apiserver
-    state: started
+    state: restarted
   tags: 
     - master
 
@@ -251,7 +251,7 @@
 - name: '创建RBAC 权限，只需创建一次'
   shell: kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
   run_once: true #只执行一次
-  delegate_to: "{{default_run_once_host}}" #可以结合delegate_to，表示只在192.168.143.129这台主机上面执行。如果不加这句话，第一个执行的主机会负责执行此条task。
+  delegate_to: "{{hostvars[groups.masters[0]]['ansible_ssh_host']}}" #可以结合delegate_to，表示只在192.168.37.129这台主机上面执行。如果不加这句话，第一个执行的主机会负责执行此条task。
   tags: 
     - master
     - rbac
