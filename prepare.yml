@@ -4,6 +4,7 @@
   debugger: on_failed
   tasks:
     - debug:
-        msg: 'start node deploy tasks'
+        msg: 'start prepare tasks'
   roles:
-    - node
+    - common
+    - dockerinstall

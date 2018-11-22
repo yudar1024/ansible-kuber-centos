@@ -1,62 +1,17 @@
-# create nginx config 
-- name: 'create nginx config folader'
-  file:
-    path: '/etc/nginx'
-    state: directory
-  tags:
-    - nginx
-    - nodes
-
-- name: 'create nginx config'
-  local_action:
-    module: template
-    src: nginx.conf.j2
-    dest: nginx.conf
-  tags:
-    - nginx
-    - config
-    - nodes
-
-- name: 'copy nginx config file'
-  copy:
-    src: nginx.conf
-    dest: /etc/nginx/nginx.conf
-  tags:
-    - nginx
-    - nodes
-
-- name: 'copy nginx serivce file'
-  copy:
-    src: nginx-proxy.service
-    dest: /etc/systemd/system/nginx-proxy.service
-  tags:
-    - nginx
-    - nodes
-
-- name: 'enable nginx service'
-  systemd:
-    daemon_reload: yes
-    enabled: yes
-    name: nginx-proxy
-    state: restarted
-  tags:
-    - nginx
-    - nodes    
-
 - name: 'create kubelet folader'
   file:
     path: '/var/lib/kubelet'
     state: directory
   tags:
     - kubelet
-    - nodes
+    - masterandnode
 
 - name: 'check kubelet existing'
   stat:
     path: '/usr/local/bin/kubelet'
   register: stat_result
   tags:
-    - nodes
+    - masterandnode
 
 - name: 'copy kubelet file'
   copy:
@@ -68,7 +23,7 @@
   when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - nodes
+    - masterandnode
 
 - name: 'create kubelet service file'
   local_action:
@@ -78,7 +33,7 @@
   tags:
     - kubelet
     - config
-    - nodes
+    - masterandnode
 
 - name: 'create kubelet config json file'
   local_action:
@@ -88,7 +43,7 @@
   tags:
     - kubelet
     - config
-    - nodes
+    - masterandnode
 
 - name: 'copy kubelet service file'
   copy:
@@ -97,7 +52,7 @@
   when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - nodes
+    - masterandnode
 
 - name: 'copy kubelet config json file'
   copy:
@@ -106,18 +61,18 @@
   when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - nodes
+    - masterandnode
 
-
-- name: Wait 10 seconds for masters api server port 6443 to become open
+- name: 'Wait 10 seconds for masters api server port 6443 to become open'
   wait_for:
     port: 6443
-    host: "{{ hostvars['item']['ansible_ssh_host'] }}"
+    host: "{{ hostvars[item]['ansible_ssh_host'] }}"
     delay: 10
     state: drained
   # loop: "{{query('inventory_hostnames', 'masters')}}"
     loop: "{{groups['masters']}}"
   connection: local
+
 
 - name: 'enable kubelet service'
   systemd:
@@ -127,7 +82,7 @@
     state: restarted
   tags:
     - kubelet
-    - nodes
+    - masterandnode
 
 - name: 'ls kubelet certification files '
   shell: 'ls -lt /etc/kubernetes/ssl/kubelet*'
@@ -136,18 +91,13 @@
     - nodes
 
 
-
-
-
-
-
 - name: 'copy kube-proxy.kubeconfig to /etc/kubernetes/'
   copy:
     src: kube-proxy.kubeconfig
     dest: /etc/kubernetes/kube-proxy.kubeconfig
   tags:
     - kubeproxy
-    - nodes
+    - masterandnode
 
 - name: 安装IP set 相关工具
   yum:
@@ -159,7 +109,7 @@
     - conntrack-tools.x86_64
   tags:
     - kubeproxy
-    - nodes
+    - masterandnode
 
 - name: '生成kube-proxy service文件'
   local_action:
@@ -167,7 +117,7 @@
     src: 'kube-proxy.config.yaml.j2'
     dest: "kube-proxy.config-{{ansible_default_ipv4['address']}}.yaml"
   tags: 
-    - nodes
+    - masterandnode
     - config
     - kubeproxy
 
@@ -177,7 +127,7 @@
     dest: /etc/kubernetes/kube-proxy.config.yaml
   tags:
     - kubeproxy
-    - nodes
+    - masterandnode
 
 - name: 'create kube-proxy folader'
   file:
@@ -185,7 +135,7 @@
     state: directory
   tags:
     - kubeproxy
-    - nodes
+    - masterandnode
 
 
 
@@ -195,7 +145,7 @@
   register: kube_proxy_result
   tags:
     - kubeproxy
-    - nodes
+    - masterandnode
     - temp
 
 - name: 'copy kube-proxy file'
@@ -208,8 +158,8 @@
   when: kube_proxy_result.stat.exists == False
   tags:
     - kubeproxy
-    - nodes
-
+    - masterandnode
+    - temp
 
 - name: 'copy kube-proxy serivce file'
   copy:
@@ -219,8 +169,8 @@
     # mode: u+rw,g-wx,o-rwx
   tags:
     - kubeproxy
-    - nodes
-
+    - masterandnode
+    - temp
 
 - name: 'enable kube-proxy service'
   systemd:
@@ -230,4 +180,5 @@
     state: restarted
   tags:
     - kubeproxy
-    - nodes
+    - masterandnode
+    - temp

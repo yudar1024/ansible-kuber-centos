@@ -1,0 +1,45 @@
+# create nginx config 
+- name: 'create nginx config folader'
+  file:
+    path: '/etc/nginx'
+    state: directory
+  tags:
+    - nginx
+    - nodes
+
+- name: 'create nginx config'
+  local_action:
+    module: template
+    src: nginx.conf.j2
+    dest: nginx.conf
+  tags:
+    - nginx
+    - config
+    - nodes
+
+- name: 'copy nginx config file'
+  copy:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+  tags:
+    - nginx
+    - nodes
+
+- name: 'copy nginx serivce file'
+  copy:
+    src: nginx-proxy.service
+    dest: /etc/systemd/system/nginx-proxy.service
+  tags:
+    - nginx
+    - nodes
+
+- name: 'enable nginx service'
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: nginx-proxy
+    state: restarted
+  tags:
+    - nginx
+    - nodes    
+

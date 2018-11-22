@@ -1,14 +1,7 @@
 ---
-- hosts: k8s
-  remote_user: root
-  tasks:
-    - debug:
-        msg: 'start common tasks'
-  roles:
-    - common
-
 - hosts: etcd
   remote_user: root
+  debugger: on_failed
   tasks:
     - debug:
         msg: 'start etcd tasks'

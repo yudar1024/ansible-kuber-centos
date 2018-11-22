@@ -6,6 +6,5 @@
     - debug:
         msg: 'start masters deploy tasks'
   roles:
-    - dockerinstall
     - master
     - nodeconfig

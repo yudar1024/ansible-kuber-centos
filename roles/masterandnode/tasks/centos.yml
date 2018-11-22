@@ -63,6 +63,17 @@
     - kubelet
     - masterandnode
 
+- name: Wait 10 seconds for masters api server port 6443 to become open
+  wait_for:
+    port: 6443
+    host: "{{ hostvars['item']['ansible_ssh_host'] }}"
+    delay: 10
+    state: drained
+  # loop: "{{query('inventory_hostnames', 'masters')}}"
+    loop: "{{groups['masters']}}"
+  connection: local
+
+
 - name: 'enable kubelet service'
   systemd:
     daemon_reload: yes
@@ -77,87 +88,13 @@
   shell: 'ls -lt /etc/kubernetes/ssl/kubelet*'
   tags:
     - kubelet
-    - masterandnode
+    - nodes
 
-# - name: 'generate kube-proxy cert files'
-#   local_action: 'shell cfssl gencert -ca=roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes  roles/masterandnode/files/kube-proxy-csr.json | cfssljson -bare kube-proxy'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 'create kubelet folader'
-#   file:
-#     path: '/etc/kubernetes/ssl'
-#     state: directory
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 'copy kube-proxy-key.pem file'
-#   copy:
-#     src: kube-proxy-key.pem
-#     dest: /etc/kubernetes/ssl/kube-proxy-key.pem
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 'copy kube-proxy.pem file'
-#   copy:
-#     src: kube-proxy.pem
-#     dest: /etc/kubernetes/ssl/kube-proxy.pem
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 添加 kube-proxy 在集群中的配置
-#   shell: 'kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - name: 配置  kube-proxy 客户端认证
-#   shell: 'kubectl config set-credentials kube-proxy --client-certificate=/etc/kubernetes/ssl/kube-proxy.pem --client-key=/etc/kubernetes/ssl/kube-proxy-key.pem --embed-certs=true --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-
-# - name: 关联context 和集群
-#   shell: 'kubectl config set-context default --cluster=kubernetes --user=kube-proxy --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-
-# - name: 关联default context 和集群
-#   shell: 'kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig'
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-
-# - debug:
-#     msg: "{{hostvars[groups.masterandnode[0]]['ansible_ssh_host']}}"
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-#     - fetch
-
-# - name: 从远程拷贝回生成的 kube-proxy.kubeconfig
-#   fetch:
-#     src: /root/kube-proxy.kubeconfig
-#     dest: ./kube-proxy.kubeconfig
-#     flat: yes
-#   run_once: yes
-#   tags:
-#     - kubeproxy
-#     - masterandnode
-#     - fetch
 
 - name: 'copy kube-proxy.kubeconfig to /etc/kubernetes/'
   copy:
     src: kube-proxy.kubeconfig
     dest: /etc/kubernetes/kube-proxy.kubeconfig
-    remote_src: yes
   tags:
     - kubeproxy
     - masterandnode
@@ -200,13 +137,7 @@
     - kubeproxy
     - masterandnode
 
-- name: 'copy kube-proxy service file'
-  copy:
-    src: kube-proxy.service
-    dest: /etc/systemd/system/kube-proxy.service
-  tags:
-    - kubeproxy
-    - masterandnode
+
 
 - name: 'check kube-proxy existing'
   stat:
