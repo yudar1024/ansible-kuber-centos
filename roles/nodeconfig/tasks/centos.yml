@@ -1,6 +1,6 @@
 
 - name: 'generate kube-proxy cert files'
-  local_action: 'shell cfssl gencert -ca=roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes  roles/masterandnode/files/kube-proxy-csr.json | cfssljson -bare kube-proxy'
+  local_action: 'shell cfssl gencert -ca=roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes  roles/nodeconfig/files/kube-proxy-csr.json | cfssljson -bare kube-proxy'
   tags:
     - kubeproxy
     - nodeconfig

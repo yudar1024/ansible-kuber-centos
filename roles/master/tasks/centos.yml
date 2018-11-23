@@ -1,77 +1,77 @@
-# 开始生成k8s证书
-- name: '判断kube-apiserver是否已经拷贝'
-  stat:
-    path: '/usr/local/bin/kube-apiserver'
-  register: apiserver_result
+#master 节点配置
+# - name: '判断kube-apiserver是否已经拷贝'
+#   stat:
+#     path: '/usr/local/bin/kube-apiserver'
+#   register: apiserver_result
 
 
 
-- name: copy kube-apiserver
-  copy:
-    src: "kube-apiserver"
-    dest: '/usr/local/bin/kube-apiserver'
-    mode: "775"
-  when: apiserver_result.stat.exists == False
-  tags:
-    - master
+# - name: copy kube-apiserver
+#   copy:
+#     src: "kube-apiserver"
+#     dest: '/usr/local/bin/kube-apiserver'
+#     mode: "775"
+#   when: apiserver_result.stat.exists == False
+#   tags:
+#     - master
 
 
-- name: '判断kube-controller-manager是否已经拷贝'
-  stat:
-    path: '/usr/local/bin/kube-controller-manager'
-  register: controller_result
+# - name: '判断kube-controller-manager是否已经拷贝'
+#   stat:
+#     path: '/usr/local/bin/kube-controller-manager'
+#   register: controller_result
 
-- name: copy kube-controller-manager
-  copy:
-    src: "kube-controller-manager"
-    dest: '/usr/local/bin/kube-controller-manager'
-    mode: "775"
-  when: controller_result.stat.exists == False
-  tags:
-    - master
+# - name: copy kube-controller-manager
+#   copy:
+#     src: "kube-controller-manager"
+#     dest: '/usr/local/bin/kube-controller-manager'
+#     mode: "775"
+#   when: controller_result.stat.exists == False
+#   tags:
+#     - master
 
-- name: '判断kube-scheduler是否已经拷贝'
-  stat:
-    path: '/usr/local/bin/kube-scheduler'
-  register: kube_scheduler_result
+# - name: '判断kube-scheduler是否已经拷贝'
+#   stat:
+#     path: '/usr/local/bin/kube-scheduler'
+#   register: kube_scheduler_result
 
 
-- name: copy kube-scheduler
-  copy:
-    src: "kube-scheduler"
-    dest: '/usr/local/bin/kube-scheduler'
-    mode: "775"
-  when: kube_scheduler_result.stat.exists == False
-  tags:
-    - master
+# - name: copy kube-scheduler
+#   copy:
+#     src: "kube-scheduler"
+#     dest: '/usr/local/bin/kube-scheduler'
+#     mode: "775"
+#   when: kube_scheduler_result.stat.exists == False
+#   tags:
+#     - master
 
-- name: '判断kubectl是否已经拷贝'
-  stat:
-    path: '/usr/local/bin/kubectl'
-  register: kubectl_result
+# - name: '判断kubectl是否已经拷贝'
+#   stat:
+#     path: '/usr/local/bin/kubectl'
+#   register: kubectl_result
 
-- name: copy kubectl
-  copy:
-    src: "kubectl"
-    dest: '/usr/local/bin/kubectl'
-    mode: "775"
-  when: kubectl_result.stat.exists == False
-  tags: 
-    - master
+# - name: copy kubectl
+#   copy:
+#     src: "kubectl"
+#     dest: '/usr/local/bin/kubectl'
+#     mode: "775"
+#   when: kubectl_result.stat.exists == False
+#   tags: 
+#     - master
 
-- name: '判断/kubeadm是否已经拷贝'
-  stat:
-    path: '/usr/local/bin//kubeadm'
-  register: kubeadm_result
+# - name: '判断/kubeadm是否已经拷贝'
+#   stat:
+#     path: '/usr/local/bin//kubeadm'
+#   register: kubeadm_result
 
-- name: copy kubeadm file
-  copy:
-    src: "kubeadm"
-    dest: '/usr/local/bin/kubeadm'
-    mode: 775
-  when: kubeadm_result.stat.exists == False
-  tags: 
-    - master
+# - name: copy kubeadm file
+#   copy:
+#     src: "kubeadm"
+#     dest: '/usr/local/bin/kubeadm'
+#     mode: 775
+#   when: kubeadm_result.stat.exists == False
+#   tags: 
+#     - master
 # - name: copy kubelet
 #   copy:
 #     src: "kubelet"
@@ -82,6 +82,7 @@
 #     src: "kubeadm"
 #     dest: '/usr/local/bin/kubeadm'
 #     mode: "775"
+# master 节点用到此证书
 - name: copy admin-key.pem
   copy:
     src: "admin-key.pem"
@@ -96,9 +97,10 @@
   tags: 
     - master
     - k8scert
-
+# 生成 .kube/config
 - name: '配置k8s集群，CA 证书'
-  shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443
+#   shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443
+  shell: "kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://{{ansible_default_ipv4['address']}}:6443"
   tags: 
     - master
     - k8scert
@@ -131,7 +133,8 @@
   tags: 
     - master
     - template
-    
+
+# master节点会用到这个证书用来设置其他节点对APIserver的访问权限
 - name: '生成kubernetes证书'
   local_action: shell cfssl gencert -ca=roles/common/files/ca.pem -ca-key=roles/common/files/ca-key.pem -config=roles/common/files/config.json -profile=kubernetes kubernetes-csr.json | cfssljson -bare kubernetes
   run_once: true
@@ -247,74 +250,88 @@
   shell: kubectl get componentstatuses
   tags: master
 
+- name: Check if clusterrolebinding kube-apiserver Exists
+  shell: "if kubectl get clusterrolebinding | grep -q kube-apiserver:kubelet-apis ;then echo False; else echo True; fi;"
+  register: kube_apiserver_clusterrolebinding_exists
+
+- debug:
+    msg: "{{kube_apiserver_clusterrolebinding_exists}}"
+  tags:
+    - temp
 
 - name: '创建RBAC 权限，只需创建一次'
   shell: kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
   run_once: true #只执行一次
   delegate_to: "{{hostvars[groups.masters[0]]['ansible_ssh_host']}}" #可以结合delegate_to，表示只在192.168.37.129这台主机上面执行。如果不加这句话，第一个执行的主机会负责执行此条task。
+  when: 'kube_apiserver_clusterrolebinding_exists.stdout == "True"'
   tags: 
     - master
     - rbac
 
 
 
-- name: '生成 bootstrap 的token'
-  shell: "kubeadm token create --description kubelet-bootstrap-token --groups system:bootstrappers:{{ansible_hostname}} --kubeconfig ~/.kube/config"
-  register: bootstrap_token
-  tags: 
-    - master
-    - boostrap
+# - name: '生成 bootstrap 的token'
+#   shell: "kubeadm token create --description kubelet-bootstrap-token --groups system:bootstrappers:{{ansible_hostname}} --kubeconfig ~/.kube/config"
+#   register: bootstrap_token
+#   tags: 
+#     - master
+#     - boostrap
     
 
 
-- name: bootstrap token 值
-  debug:
-    msg: "{{bootstrap_token.stdout}}"
-  tags: 
-    - master
-    - boostrap
+# - name: bootstrap token 值
+#   debug:
+#     msg: "{{bootstrap_token.stdout}}"
+#   tags: 
+#     - master
+#     - boostrap
 
 
-- name: 'bootstrap 配置集群参数'
-  shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
-  tags: 
-    - master
-    - boostrap
+# - name: 'bootstrap 配置集群参数'
+#   shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
+#   tags: 
+#     - master
+#     - boostrap
 
-- name: '配置 credentials 关联'
-  shell: "kubectl config set-credentials kubelet-bootstrap --token={{bootstrap_token.stdout}} --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
-  tags: 
-    - master
-    - boostrap
+# - name: '配置 credentials 关联'
+#   shell: "kubectl config set-credentials kubelet-bootstrap --token={{bootstrap_token.stdout}} --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
+#   tags: 
+#     - master
+#     - boostrap
 
-- name: '创建默认上下文'
-  shell: kubectl config set-context default --cluster=kubernetes --user=kubelet-bootstrap --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
-  tags:
-    - master
-    - boostrap
-    - watch
+# - name: '创建默认上下文'
+#   shell: kubectl config set-context default --cluster=kubernetes --user=kubelet-bootstrap --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
+#   tags:
+#     - master
+#     - boostrap
+#     - watch
 
-- name: '配置context默认关联'
-  shell: "kubectl config use-context default --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
-  tags: 
-    - master
-    - boostrap
-    - watch
+# - name: '配置context默认关联'
+#   shell: "kubectl config use-context default --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
+#   tags: 
+#     - master
+#     - boostrap
+#     - watch
 
-- name: copy bootstrap.kubeconfig file
-  copy:
-    src: "{{ansible_hostname}}-bootstrap.kubeconfig"
-    dest: '/etc/kubernetes/bootstrap.kubeconfig'
-    mode: 775
-    remote_src: yes
-  tags: 
-    - master
-    - boostrap
-    - watch
+# - name: copy bootstrap.kubeconfig file
+#   copy:
+#     src: "{{ansible_hostname}}-bootstrap.kubeconfig"
+#     dest: '/etc/kubernetes/bootstrap.kubeconfig'
+#     mode: 775
+#     remote_src: yes
+#   tags: 
+#     - master
+#     - boostrap
+#     - watch
+
+- name: Check if clusterrolebinding  kubelet-bootstrap Exists
+  shell: "if kubectl get clusterrolebinding | grep -q kubelet-bootstrap ;then echo False; else echo True; fi;"
+  register: bootstrap_clusterrolebinding_exists
 
 - name: '配置 RBAC 权限'
   shell: kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --group=system:bootstrappers
   run_once: true
+  when: 'bootstrap_clusterrolebinding_exists.stdout == "True"'
   tags: 
     - master
     - boostrap
@@ -347,28 +364,43 @@
     - boostrap
     - watch
 
+- name: Check if clusterrolebinding  auto-approve-csr Exists
+  shell: "if kubectl get clusterrolebinding | grep -q auto-approve-csr ;then echo False; else echo True; fi;"
+  register: auto_approve_csr_clusterrolebinding_exists
+
 # 自动批准 system:bootstrappers 组用户 TLS bootstrapping 首次申请证书的 CSR 请求
 - name: 创建 cluster role binding node-client-auto-approve-csr
   shell: kubectl create clusterrolebinding node-client-auto-approve-csr --clusterrole=system:certificates.k8s.io:certificatesigningrequests:nodeclient --group=system:bootstrappers
   run_once: true
+  when: 'auto_approve_csr_clusterrolebinding_exists.stdout == "True"'
   tags: 
     - master
     - boostrap
     - watch
+
+- name: Check if clusterrolebinding  node-client-auto-renew-crt Exists
+  shell: "if kubectl get clusterrolebinding | grep -q node-client-auto-renew-crt ;then echo False; else echo True; fi;"
+  register: client_renew_crt_clusterrolebinding_exists
 
 # 自动批准 system:nodes 组用户更新 kubelet 自身与 apiserver 通讯证书的 CSR 请求
 - name: 创建 cluster binding node-client-auto-renew-crt
   shell: kubectl create clusterrolebinding node-client-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeclient --group=system:nodes
   run_once: true
+  when: 'client_renew_crt_clusterrolebinding_exists.stdout == "True"'
   tags: 
     - master
     - boostrap
     - watch
 
+- name: Check if clusterrolebinding  node-server-auto-renew-crt Exists
+  shell: "if kubectl get clusterrolebinding | grep -q node-client-auto-renew-crt ;then echo False; else echo True; fi;"
+  register: server_renew_crt_clusterrolebinding_exists
+
 # 自动批准 system:nodes 组用户更新 kubelet 10250 api 端口证书的 CSR 请求
 - name: 创建 role binding  node-server-auto-renew-crt
   shell: kubectl create clusterrolebinding node-server-auto-renew-crt --clusterrole=system:certificates.k8s.io:certificatesigningrequests:selfnodeserver --group=system:nodes
   run_once: true
+  when: 'server_renew_crt_clusterrolebinding_exists.stdout == "True"'
   tags: 
     - master
     - boostrap

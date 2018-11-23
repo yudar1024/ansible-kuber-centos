@@ -8,6 +8,7 @@ etcdnode1 ansible_ssh_host=192.168.37.131
 [etcd:children]
 masters
 
+[k8s]
 
 [node]
 k8snode ansible_ssh_host=192.168.37.131
@@ -16,6 +17,4 @@ k8snode ansible_ssh_host=192.168.37.131
 masters
 node
 
-[masterandnode]
-k8smasterandnode ansible_ssh_host=192.168.37.130
 

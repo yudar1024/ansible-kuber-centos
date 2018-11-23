@@ -6,5 +6,6 @@
     - debug:
         msg: 'start masters deploy tasks'
   roles:
+    - copybinaries
     - master
     - nodeconfig

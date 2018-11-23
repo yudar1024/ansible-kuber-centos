@@ -6,4 +6,7 @@
     - debug:
         msg: 'start node deploy tasks'
   roles:
+    - copybinaries
+    - bootstrap
+    - nginx
     - node

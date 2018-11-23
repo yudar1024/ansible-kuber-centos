@@ -1,0 +1,85 @@
+- name: 从远程拷贝回生成的config
+  fetch:
+    src: /root/.kube/config
+    dest: ./config
+    flat: yes
+  run_once: yes
+  delegate_to: "{{hostvars[groups.masters[0]]['ansible_ssh_host']}}"
+  tags:
+    - kubeproxy
+    - nodeconfig
+    - fetch
+- name: 'check .kube/config existing'
+  stat:
+    path: '~/.kube/config'
+  register: config_result
+
+- name: 'create kubelet folader'
+  file:
+    path: '~/.kube'
+    state: directory
+
+- name: copy k8s config file
+  copy:
+    src: config
+    dest: '~/.kube/config'
+  when: config_result.stat.exists == False
+
+
+- name: 'Wait 10 seconds for masters api server port 6443 to become open'
+  wait_for:
+    port: 6443
+    # host: "{{ hostvars[groups.masters[0]]['ansible_ssh_host'] }}"
+    host: "{{ hostvars[item]['ansible_ssh_host']}}"
+    delay: 10
+    state: drained
+  # loop: "{{query('inventory_hostnames', 'masters')}}"
+  loop: "{{groups['masters']}}"
+  connection: local
+
+
+- name: '生成 bootstrap 的token'
+  shell: "kubeadm token create --description kubelet-bootstrap-token --groups system:bootstrappers:{{ansible_hostname}} --kubeconfig ~/.kube/config"
+  register: bootstrap_token
+  tags: 
+    - boostrap
+    
+
+
+- name: bootstrap token 值
+  debug:
+    msg: "{{bootstrap_token.stdout}}"
+  tags: 
+    - boostrap
+
+
+- name: 'bootstrap 配置集群参数'
+  shell: kubectl config set-cluster kubernetes --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://127.0.0.1:6443 --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
+  tags: 
+    - boostrap
+
+- name: '配置 credentials 关联'
+  shell: "kubectl config set-credentials kubelet-bootstrap --token={{bootstrap_token.stdout}} --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
+  tags: 
+    - boostrap
+
+- name: '创建默认上下文'
+  shell: kubectl config set-context default --cluster=kubernetes --user=kubelet-bootstrap --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig
+  tags:
+    - boostrap
+
+
+- name: '配置context默认关联'
+  shell: "kubectl config use-context default --kubeconfig={{ansible_hostname}}-bootstrap.kubeconfig"
+  tags: 
+    - boostrap
+
+
+- name: copy bootstrap.kubeconfig file
+  copy:
+    src: "{{ansible_hostname}}-bootstrap.kubeconfig"
+    dest: '/etc/kubernetes/bootstrap.kubeconfig'
+    remote_src: yes
+    mode: 775
+  tags: 
+    - boostrap

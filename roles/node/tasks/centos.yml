@@ -1,67 +1,79 @@
+
+
 - name: 'create kubelet folader'
   file:
     path: '/var/lib/kubelet'
     state: directory
   tags:
     - kubelet
-    - masterandnode
+    - node
 
-- name: 'check kubelet existing'
-  stat:
-    path: '/usr/local/bin/kubelet'
-  register: stat_result
-  tags:
-    - masterandnode
+# - name: 'check kubelet existing'
+#   stat:
+#     path: '/usr/local/bin/kubelet'
+#   register: stat_result
+#   tags:
+#     - node
 
-- name: 'copy kubelet file'
-  copy:
-    src: kubelet
-    dest: /usr/local/bin/kubelet
-    mode: '755'
-    # mode: u=rwx,g=rx,o=rx
-    # mode: u+rw,g-wx,o-rwx
-  when: stat_result.stat.exists == False
-  tags:
-    - kubelet
-    - masterandnode
+# - name: 'copy kubelet file'
+#   copy:
+#     src: kubelet
+#     dest: /usr/local/bin/kubelet
+#     mode: '755'
+#     # mode: u=rwx,g=rx,o=rx
+#     # mode: u+rw,g-wx,o-rwx
+#   when: stat_result.stat.exists == False
+#   tags:
+#     - kubelet
+#     - node
 
 - name: 'create kubelet service file'
   local_action:
     module: template
     src: kubelet.service.j2
-    dest: kubelet.service
+    dest: kubelet-{{ansible_default_ipv4['address']}}.service
   tags:
     - kubelet
     - config
-    - masterandnode
+    - node
+
+- name: 'copy kubelet service file'
+  copy:
+    src: kubelet-{{ansible_default_ipv4['address']}}.service
+    dest: /etc/systemd/system/kubelet.service
+  # when: stat_result.stat.exists == False
+  tags:
+    - kubelet
+    - node
 
 - name: 'create kubelet config json file'
   local_action:
     module: template
     src: kubelet.config.json.j2
-    dest: kubelet.config.json
+    dest: kubelet.config-{{ansible_default_ipv4['address']}}.json
   tags:
     - kubelet
     - config
-    - masterandnode
+    - node
 
-- name: 'copy kubelet service file'
-  copy:
-    src: kubelet.service
-    dest: /etc/systemd/system/kubelet.service
-  when: stat_result.stat.exists == False
-  tags:
-    - kubelet
-    - masterandnode
+
 
 - name: 'copy kubelet config json file'
   copy:
-    src: kubelet.config.json
+    src:  kubelet.config-{{ansible_default_ipv4['address']}}.json
     dest: /etc/kubernetes/kubelet.config.json
-  when: stat_result.stat.exists == False
+  # when: stat_result.stat.exists == False
   tags:
     - kubelet
-    - masterandnode
+    - node
+
+- name: 'Wait 10 seconds for masters api server port 6443 to become open'
+  debug:
+    msg: "{{ hostvars[item]['ansible_ssh_host']}}"
+  # loop: "{{query('inventory_hostnames', 'masters')}}"
+  loop: "{{groups['masters']}}"
+  connection: local
+
 
 - name: 'Wait 10 seconds for masters api server port 6443 to become open'
   wait_for:
@@ -70,7 +82,7 @@
     delay: 10
     state: drained
   # loop: "{{query('inventory_hostnames', 'masters')}}"
-    loop: "{{groups['masters']}}"
+  loop: "{{groups['masters']}}"
   connection: local
 
 
@@ -82,13 +94,13 @@
     state: restarted
   tags:
     - kubelet
-    - masterandnode
+    - node
 
-- name: 'ls kubelet certification files '
-  shell: 'ls -lt /etc/kubernetes/ssl/kubelet*'
-  tags:
-    - kubelet
-    - nodes
+# - name: 'ls kubelet certification files '
+#   shell: 'ls -lt /etc/kubernetes/ssl/kubelet*'
+#   tags:
+#     - kubelet
+#     - nodes
 
 
 - name: 'copy kube-proxy.kubeconfig to /etc/kubernetes/'
@@ -97,7 +109,7 @@
     dest: /etc/kubernetes/kube-proxy.kubeconfig
   tags:
     - kubeproxy
-    - masterandnode
+    - node
 
 - name: 安装IP set 相关工具
   yum:
@@ -109,7 +121,7 @@
     - conntrack-tools.x86_64
   tags:
     - kubeproxy
-    - masterandnode
+    - node
 
 - name: '生成kube-proxy service文件'
   local_action:
@@ -117,7 +129,7 @@
     src: 'kube-proxy.config.yaml.j2'
     dest: "kube-proxy.config-{{ansible_default_ipv4['address']}}.yaml"
   tags: 
-    - masterandnode
+    - node
     - config
     - kubeproxy
 
@@ -127,7 +139,7 @@
     dest: /etc/kubernetes/kube-proxy.config.yaml
   tags:
     - kubeproxy
-    - masterandnode
+    - node
 
 - name: 'create kube-proxy folader'
   file:
@@ -135,31 +147,7 @@
     state: directory
   tags:
     - kubeproxy
-    - masterandnode
-
-
-
-- name: 'check kube-proxy existing'
-  stat:
-    path: '/usr/local/bin/kube-proxy'
-  register: kube_proxy_result
-  tags:
-    - kubeproxy
-    - masterandnode
-    - temp
-
-- name: 'copy kube-proxy file'
-  copy:
-    src: kube-proxy
-    dest: /usr/local/bin/kube-proxy
-    mode: '755'
-    # mode: u=rwx,g=rx,o=rx
-    # mode: u+rw,g-wx,o-rwx
-  when: kube_proxy_result.stat.exists == False
-  tags:
-    - kubeproxy
-    - masterandnode
-    - temp
+    - node
 
 - name: 'copy kube-proxy serivce file'
   copy:
@@ -169,7 +157,7 @@
     # mode: u+rw,g-wx,o-rwx
   tags:
     - kubeproxy
-    - masterandnode
+    - node
     - temp
 
 - name: 'enable kube-proxy service'
@@ -180,5 +168,5 @@
     state: restarted
   tags:
     - kubeproxy
-    - masterandnode
+    - node
     - temp

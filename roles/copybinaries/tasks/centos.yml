@@ -1,0 +1,127 @@
+# 开始生成k8s证书
+- name: '判断kube-apiserver是否已经拷贝'
+  stat:
+    path: '/usr/local/bin/kube-apiserver'
+  register: apiserver_result
+  tags:
+    - master
+
+
+- name: copy kube-apiserver
+  copy:
+    src: "kube-apiserver"
+    dest: '/usr/local/bin/kube-apiserver'
+    mode: "775"
+  when: apiserver_result.stat.exists == False
+  tags:
+    - master
+
+
+- name: '判断kube-controller-manager是否已经拷贝'
+  stat:
+    path: '/usr/local/bin/kube-controller-manager'
+  register: controller_result
+  tags:
+    - master
+
+- name: copy kube-controller-manager
+  copy:
+    src: "kube-controller-manager"
+    dest: '/usr/local/bin/kube-controller-manager'
+    mode: "775"
+  when: controller_result.stat.exists == False
+  tags:
+    - master
+
+- name: '判断kube-scheduler是否已经拷贝'
+  stat:
+    path: '/usr/local/bin/kube-scheduler'
+  register: kube_scheduler_result
+  tags:
+    - master
+
+- name: copy kube-scheduler
+  copy:
+    src: "kube-scheduler"
+    dest: '/usr/local/bin/kube-scheduler'
+    mode: "775"
+  when: kube_scheduler_result.stat.exists == False
+  tags:
+    - master
+
+- name: '判断kubectl是否已经拷贝'
+  stat:
+    path: '/usr/local/bin/kubectl'
+  register: kubectl_result
+  tags:
+    - master
+    - node
+
+- name: copy kubectl
+  copy:
+    src: "kubectl"
+    dest: '/usr/local/bin/kubectl'
+    mode: "775"
+  when: kubectl_result.stat.exists == False
+  tags:
+    - master
+    - node
+
+- name: '判断/kubeadm是否已经拷贝'
+  stat:
+    path: '/usr/local/bin//kubeadm'
+  register: kubeadm_result
+  tags:
+    - master
+    - node
+
+- name: copy kubeadm file
+  copy:
+    src: "kubeadm"
+    dest: '/usr/local/bin/kubeadm'
+    mode: 775
+  when: kubeadm_result.stat.exists == False
+  tags:
+    - master
+    - node
+
+- name: 'check kubelet existing'
+  stat:
+    path: '/usr/local/bin/kubelet'
+  register: kubelet_result
+  tags:
+    - master
+    - node
+
+- name: 'copy kubelet file'
+  copy:
+    src: kubelet
+    dest: /usr/local/bin/kubelet
+    mode: '755'
+    # mode: u=rwx,g=rx,o=rx
+    # mode: u+rw,g-wx,o-rwx
+  when: kubelet_result.stat.exists == False
+  tags:
+    - master
+    - node
+
+- name: 'check kube-proxy existing'
+  stat:
+    path: '/usr/local/bin/kube-proxy'
+  register: kube_proxy_result
+  tags:
+    - master
+    - node
+
+- name: 'copy kube-proxy file'
+  copy:
+    src: kube-proxy
+    dest: /usr/local/bin/kube-proxy
+    mode: '755'
+    # mode: u=rwx,g=rx,o=rx
+    # mode: u+rw,g-wx,o-rwx
+  when: kube_proxy_result.stat.exists == False
+  tags:
+    - master
+    - node
+
