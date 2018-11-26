@@ -1,0 +1,2 @@
+default_cluster_cidr: '10.254.64.0/18'
+default_cluster_ip_range: '10.254.0.0/18'

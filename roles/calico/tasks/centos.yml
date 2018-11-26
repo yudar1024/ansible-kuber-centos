@@ -1,0 +1,93 @@
+- name: "base64 encode etcd-key"
+  shell: "cat ./etcd-key.pem | base64 | tr -d '\n'"
+  register: etcdkey
+  run_once: yes
+  connection: local
+
+- debug:
+    msg: "{{etcdkey.stdout}}"
+
+- name: 'base64 encode etcdcert'
+  shell: "cat ./etcd.pem | base64 | tr -d '\n'"
+  connection: local
+  run_once: yes
+  register: etcdcert
+
+- debug:
+    msg: "{{etcdcert.stdout}}"
+
+- name: 'base64 encode ca'
+  shell: "cat ./roles/common/files/ca.pem | base64 | tr -d '\n'"
+  connection: local
+  run_once: yes
+  register: ca
+
+- debug:
+    msg: "{{ca.stdout}}"
+
+- name: 'generate calico yaml'
+  local_action:
+    module: template
+    src: calico.yaml.j2
+    dest: calico.yaml
+
+
+- name: Check if calico rbac is already executed
+  shell: "if kubectl get clusterrole | grep -q calico-kube-controllers ;then echo False; else echo True; fi;"
+  register: calico_kube_controllers_exists
+
+- debug:
+    msg: "{{calico_kube_controllers_exists}}"
+
+- name: copy rbac yaml file
+  copy:
+    src: rbac.yaml
+    dest: ~/rbac.yaml
+
+- name: 'generate calico yaml'
+  shell: kubectl apply -f ./rbac.yaml
+  run_once: yes
+  when: "calico_kube_controllers_exists.stdout =='True'"
+
+- name: Check if calico pod is already executed
+  shell: "if kubectl get pods -n kube-system | grep -q calico-kube-controllers* ;then echo False; else echo True; fi;"
+  register: calico_pod_controllers_exists
+
+- debug:
+    msg: "{{calico_pod_controllers_exists}}"
+  
+- name: copy rbac yaml file
+  copy:
+    src: calico.yaml
+    dest: ~/calico.yaml
+
+- name: 'generate calico yaml'
+  shell: kubectl apply -f ./calico.yaml
+  run_once: yes
+  when: "calico_pod_controllers_exists.stdout =='True'"
+
+- name: 'crate /etc/calico directionary'
+  file:
+    path: '/etc/calico'
+    state: directory
+
+- name: 'check calicoctl existing'
+  stat:
+    path: '/usr/local/bin/calicoctl'
+  register: calicoctl_result
+
+- name: copy calicoctl
+  copy:
+   src: calicoctl
+   dest: '/usr/local/bin/calicoctl'
+   mode: u=rwx,g=rx,o=rx
+  when: calicoctl_result.stat.exists == False
+
+- name: copy calicoctl
+  copy:
+   src: calicoctl.cfg
+   dest: '/etc/calico/calicoctl.cfg'
+
+
+- name: show node
+  shell: calicoctl get node

@@ -12,6 +12,8 @@ masters
 
 [node]
 k8snode ansible_ssh_host=192.168.37.131
+k8smasterandnode ansible_ssh_host=192.168.37.130
+
 
 [k8s:children]
 masters
