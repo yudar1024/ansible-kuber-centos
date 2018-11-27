@@ -1,0 +1,19 @@
+- name: 'generate coredns config file'
+  local_action:
+    module: template
+    src: coredns.yaml.j2
+    dest: coredns.yaml
+
+- name: copy coredns yaml file
+  copy:
+    src: coredns.yaml
+    dest: ~/coredns.yaml
+
+- name: Check if coredns pod is already executed
+  shell: "if kubectl get pods -n kube-system | grep -q coredns* ;then echo False; else echo True; fi;"
+  register: coredns_exists
+
+- name: 'apply coredns yaml'
+  shell: kubectl apply -f ./coredns.yaml
+  run_once: yes
+  when: "coredns_exists =='True'"

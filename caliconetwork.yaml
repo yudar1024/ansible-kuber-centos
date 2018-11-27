@@ -7,3 +7,12 @@
         msg: 'start calico tasks'
   roles:
     - calico
+
+- hosts: k8s
+  remote_user: root
+  debugger: on_failed
+  tasks:
+    - debug:
+        msg: start cni setup
+  roles:
+    - cnisetup
