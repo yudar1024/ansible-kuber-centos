@@ -60,14 +60,14 @@ data:
           pods insecure
           upstream
           fallthrough in-addr.arpa ip6.arpa
-        }FEDERATIONS
+        }
         prometheus :9153
-        proxy . UPSTREAMNAMESERVER
+        proxy . /etc/resolv.conf
         cache 30
         loop
         reload
         loadbalance
-    }STUBDOMAINS
+    }
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment

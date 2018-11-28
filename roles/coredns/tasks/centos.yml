@@ -16,4 +16,4 @@
 - name: 'apply coredns yaml'
   shell: kubectl apply -f ./coredns.yaml
   run_once: yes
-  when: "coredns_exists =='True'"
+  when: "coredns_exists.stdout == 'True'"
