@@ -1,0 +1,13 @@
+- name: copy dns-autoscaler yaml file
+  copy:
+    src: dns-auto-scaling.yaml
+    dest: ~/dns-auto-scaling.yaml
+
+- name: Check if dns-autoscaler pod is already executed
+  shell: "if kubectl get pods -n kube-system | grep -q kube-dns-autoscaler* ;then echo False; else echo True; fi;"
+  register: dns_autoscaler_exists
+
+- name: 'apply dns-autoscaler yaml'
+  shell: kubectl apply -f ./dns-auto-scaling.yaml
+  run_once: yes
+  when: "dns_autoscaler_exists.stdout == 'True'"

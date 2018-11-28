@@ -1,0 +1,10 @@
+---
+- hosts: masters
+  remote_user: root
+  debugger: on_failed
+  tasks:
+    - debug:
+        msg: 'start dns auto scaling tasks'
+  roles:
+    - dnsautoscaling
+
