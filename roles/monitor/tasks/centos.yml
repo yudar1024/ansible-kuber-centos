@@ -1,0 +1,72 @@
+- name: copy heapster-rbac yaml file
+  copy:
+    src: heapster-rbac.yaml
+    dest: ~/heapster-rbac.yaml
+
+- name: Check if cluster role binding heapster already executed
+  shell: "if kubectl get clusterrolebinding -n kube-system | grep -q heapster ;then echo False; else echo True; fi;"
+  register: rbac_exists
+
+- debug:
+    msg: "{{rbac_exists.stdout}}"
+
+- name: 'apply heapster-rbac yaml'
+  shell: kubectl apply -f ./heapster-rbac.yaml
+  run_once: yes
+  when: "rbac_exists.stdout == 'True'"
+
+- name: copy influxdb yaml file
+  copy:
+    src: influxdb.yaml
+    dest: ~/influxdb.yaml
+
+- name: Check if deployment monitoring-influxdb already executed
+  shell: "if kubectl get deployment -n kube-system | grep -q monitoring-influxdb ;then echo False; else echo True; fi;"
+  register: influxdb_exists
+
+- name: 'apply monitoring-influxdb yaml'
+  shell: kubectl apply -f ./influxdb.yaml
+  run_once: yes
+  when: "influxdb_exists.stdout == 'True'"
+
+- name: copy heapster yaml file
+  copy:
+    src: heapster.yaml
+    dest: ~/heapster.yaml
+
+- name: Check if deployment heapster already executed
+  shell: "if kubectl get deployment -n kube-system | grep -q heapster ;then echo False; else echo True; fi;"
+  register: heapster_exists
+
+- name: 'apply heapster yaml'
+  shell: kubectl apply -f ./heapster.yaml
+  run_once: yes
+  when: "heapster_exists.stdout == 'True'"
+
+- name: copy grafana yaml file
+  copy:
+    src: grafana.yaml
+    dest: ~/grafana.yaml
+
+- name: Check if deployment heapster already executed
+  shell: "if kubectl get deployment -n kube-system | grep -q monitoring-grafana ;then echo False; else echo True; fi;"
+  register: grafana_exists
+
+- name: 'apply heapster yaml'
+  shell: kubectl apply -f ./grafana.yaml
+  run_once: yes
+  when: "grafana_exists.stdout == 'True'"
+
+- name: copy dashboard yaml file
+  copy:
+    src: kubernetes-dashboard.yaml
+    dest: ~/kubernetes-dashboard.yaml
+
+- name: Check if deployment kubernetes-dashboard already executed
+  shell: "if kubectl get deployment -n kube-system | grep -q kubernetes-dashboard ;then echo False; else echo True; fi;"
+  register: dashboard_exists
+
+- name: 'apply heapster yaml'
+  shell: kubectl apply -f ./kubernetes-dashboard.yaml
+  run_once: yes
+  when: "dashboard_exists.stdout == 'True'"

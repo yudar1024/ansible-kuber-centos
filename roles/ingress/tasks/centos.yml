@@ -1,0 +1,59 @@
+- name: copy ingress namespace yaml file
+  copy:
+    src: namespace.yaml
+    dest: ~/namespace.yaml
+
+- name: Check if namespace ingress-nginx already executed
+  shell: "if kubectl get namespace | grep -q ingress-nginx ;then echo False; else echo True; fi;"
+  register: namespace_exists
+
+- debug:
+    msg: "{{namespace_exists.stdout}}"
+
+- name: 'apply namespace yaml'
+  shell: kubectl apply -f ./namespace.yaml
+  run_once: yes
+  when: "namespace_exists.stdout == 'True'"
+
+- name: copy ingress-rbac.yaml file
+  copy:
+    src: ingress-rbac.yaml
+    dest: ~/ingress-rbac.yaml
+
+- name: Check if cluster role nginx-ingress-clusterrole already executed
+  shell: "if kubectl get clusterrole | grep -q nginx-ingress-clusterrole ;then echo False; else echo True; fi;"
+  register: ingressrole_exists
+
+- name: 'apply ingress-rbac.yaml'
+  shell: kubectl apply -f ./ingress-rbac.yaml
+  run_once: yes
+  when: "ingressrole_exists.stdout == 'True'"
+
+- name: copy configmap yaml file
+  copy:
+    src: configmap.yaml
+    dest: ~/configmap.yaml
+
+- name: Check if configmap nginx-configuration already executed
+  shell: "if kubectl get configmap -n ingress-nginx | grep -q nginx-configuration ;then echo False; else echo True; fi;"
+  register: configmap_exists
+
+- name: 'apply configmap yaml'
+  shell: kubectl apply -f ./configmap.yaml
+  run_once: yes
+  when: "configmap_exists.stdout == 'True'"
+
+- name: copy with-rbac yaml file
+  copy:
+    src: with-rbac.yaml
+    dest: ~/with-rbac.yaml
+
+- name: Check if deployment nginx-ingress-controller already executed
+  shell: "if kubectl get deployment -n ingress-nginx | grep -q nginx-ingress-controller ;then echo False; else echo True; fi;"
+  register: ingress_controller_exists
+
+- name: 'apply with-rbac yaml'
+  shell: kubectl apply -f ./with-rbac.yaml
+  run_once: yes
+  when: "ingress_controller_exists.stdout == 'True'"
+
