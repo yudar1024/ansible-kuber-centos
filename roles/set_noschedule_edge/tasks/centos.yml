@@ -1,0 +1,25 @@
+- name: set noschedule
+  shell: kubectl taint nodes "{{ hostvars[item]['host_name']}}" node-role.kubernetes.io/master=:NoSchedule
+  loop: "{{groups['noschedule']}}"
+  run_once: yes
+
+- name: set scheduledmaster
+  shell: kubectl label  nodes "{{ hostvars[item]['host_name']}}" node-role.kubernetes.io/master=
+  loop: "{{groups['scheduledmaster']}}"
+  run_once: yes
+
+- name: set noschedule
+  shell: kubectl label  nodes "{{ hostvars[item]['host_name']}}" node-role.kubernetes.io/node=
+  loop: "{{groups['scheduled']}}"
+  run_once: yes
+
+- name: set ingress controller
+  shell: kubectl label  nodes "{{ hostvars[item]['host_name']}}" ingress=proxy
+  loop: "{{groups['edge']}}"
+  run_once: yes
+
+# - name: show param
+#   debug: 
+#       msg: "{{ hostvars[item]['host_name']}}"
+#   loop: "{{groups['noschedule']}}"
+#   run_once: yes

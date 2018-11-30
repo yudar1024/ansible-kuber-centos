@@ -1,0 +1,46 @@
+
+
+- name: copy  traefik-rbac.yaml file
+  copy:
+    src: traefik-rbac.yaml
+    dest: ~/traefik-rbac.yaml
+
+- name: Check if cluster role traefik-ingress-controller already executed
+  shell: "if kubectl get clusterrole | grep -q traefik-ingress-controller ;then echo False; else echo True; fi;"
+  register: clusterrole_exists
+
+- name: 'apply traefik-rbac.yaml'
+  shell: kubectl apply -f ./traefik-rbac.yaml
+  run_once: yes
+  when: "clusterrole_exists.stdout == 'True'"
+
+
+- name: copy traefik-deployment.yaml  file
+  copy:
+    src: traefik-deployment.yaml
+    dest: ~/traefik-deployment.yaml
+
+- name: Check if deployment nginx-ingress-controller already executed
+  shell: "if kubectl get deployment -n kube-system | grep -q traefik-ingress-controller ;then echo False; else echo True; fi;"
+  register: ingress_controller_exists
+
+- name: 'apply traefik-deployment.yaml '
+  shell: kubectl apply -f ./traefik-deployment.yaml
+  run_once: yes
+  when: "ingress_controller_exists.stdout == 'True'"
+
+
+- name: copy ui.yaml  file
+  copy:
+    src: ui.yaml.yaml
+    dest: ~/ui.yaml.yaml
+
+- name: Check if deployment nginx-ingress-controller already executed
+  shell: "if kubectl get svc -n kube-system | grep -q traefik-web-ui ;then echo False; else echo True; fi;"
+  register: ui_exists
+
+- name: 'apply ui.yaml '
+  shell: kubectl apply -f ./ui.yaml.yaml
+  run_once: yes
+  when: "ui_exists.stdout == 'True'"
+
