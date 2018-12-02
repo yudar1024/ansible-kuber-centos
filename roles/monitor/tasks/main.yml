@@ -7,3 +7,8 @@
   tags: etcd
 #  使用以下方式进行匹配 详细值请参阅 https://docs.ansible.com/ansible/2.5/user_guide/playbooks_conditionals.html#ansible-distribution
 # 在2.7中添加了 include-tasks 的module
+
+
+- name: 'import oraclelinux'
+  import_tasks: centos.yml
+  when: ansible_distribution == 'OracleLinux'

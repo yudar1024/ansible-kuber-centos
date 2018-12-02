@@ -14,6 +14,8 @@ metadata:
     k8s-app: traefik-ingress-lb
 spec:
   replicas: 1
+  nodeSelector:
+    ingress: proxy
   selector:
     matchLabels:
       k8s-app: traefik-ingress-lb
@@ -37,6 +39,12 @@ spec:
         - --api
         - --kubernetes
         - --logLevel=INFO
+        # disable tls and https, use for expose kubernetes dashboard
+        - --insecureskipverify=true
+        # enable tls https
+        # - --defaultentrypoints=http,https
+        # - --entrypoints=Name:https Address::443 TLS
+        # - --entrypoints=Name:http Address::80
 ---
 kind: Service
 apiVersion: v1

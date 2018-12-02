@@ -32,15 +32,15 @@
 
 - name: copy ui.yaml  file
   copy:
-    src: ui.yaml.yaml
-    dest: ~/ui.yaml.yaml
+    src: ui.yaml
+    dest: ~/ui.yaml
 
 - name: Check if deployment nginx-ingress-controller already executed
   shell: "if kubectl get svc -n kube-system | grep -q traefik-web-ui ;then echo False; else echo True; fi;"
   register: ui_exists
 
 - name: 'apply ui.yaml '
-  shell: kubectl apply -f ./ui.yaml.yaml
+  shell: kubectl apply -f ./ui.yaml
   run_once: yes
   when: "ui_exists.stdout == 'True'"
 

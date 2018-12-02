@@ -1,9 +1,9 @@
 [masters]
-k8smaster1 ansible_ssh_host=192.168.37.129
-k8smasterandnode ansible_ssh_host=192.168.37.130
+oraclelinux7 ansible_ssh_host=192.168.10.3
+k8s-m1 ansible_ssh_host=192.168.10.4
 
 [etcd]
-etcdnode1 ansible_ssh_host=192.168.37.131
+k8s-n1 ansible_ssh_host=192.168.10.5
 
 [etcd:children]
 masters
@@ -11,8 +11,7 @@ masters
 [k8s]
 
 [node]
-k8snode ansible_ssh_host=192.168.37.131
-k8smasterandnode ansible_ssh_host=192.168.37.130 
+k8s-n1 ansible_ssh_host=192.168.10.5
 
 
 [k8s:children]
@@ -20,19 +19,20 @@ masters
 node
 
 [noschedule]
-k8smaster1 ansible_ssh_host=192.168.37.129 host_name=k8smaster1
+oraclelinux7 ansible_ssh_host=192.168.10.3 host_name=oraclelinux7
 
 [scheduledmaster]
-k8smasterandnode ansible_ssh_host=192.168.37.130 host_name=k8smasterandnode
+k8s-m2 ansible_ssh_host=192.168.10.4 host_name=k8s-m2
+oraclelinux7 ansible_ssh_host=192.168.10.3 host_name=oraclelinux7
 
 [scheduled]
-k8snode ansible_ssh_host=192.168.37.131 host_name=k8snode
+k8s-n1 ansible_ssh_host=192.168.10.5 host_name=k8s-n1
 
 [edge]
-k8snode ansible_ssh_host=192.168.37.131 host_name=k8snode
+k8s-n1 ansible_ssh_host=192.168.10.5 host_name=k8s-n1
 
 [all:vars]
-default_run_once_host="192.168.143.129"
+default_run_once_host="192.168.10.3"
 default_cluster_cidr="10.254.64.0/18"
 default_cluster_ip_range="10.254.0.0/18"
 cluster_dns_ip="10.254.0.2"

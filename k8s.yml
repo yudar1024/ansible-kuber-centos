@@ -30,9 +30,26 @@
   remote_user: root
   tasks:
     - debug:
-        msg: 'start setup nodes'
+        msg: 'start bootstrap nodes'
   roles:
     - copybinaries
     - bootstrap
+
+- hosts: masters
+  remote_user: root
+  tasks:
+    - debug:
+        msg: 'start masters node module'
+  roles:
+    - copybinaries
+    - node
+
+- hosts: node
+  remote_user: root
+  tasks:
+    - debug:
+        msg: 'start  node task'
+  roles:
+    - copybinaries
     - nginx
     - node
