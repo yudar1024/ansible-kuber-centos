@@ -3,7 +3,9 @@
     msg: "{{ansible_distribution | lower}}"
 - name: 'import centos'
   import_tasks: centos.yml
-  when: ansible_distribution == 'CentOS'
+  when: ansible_distribution == 'CentOS' and ansible_distribution_major_version == '7'
+#  when: ansible_distribution == 'CentOS' and (ansible_distribution_major_version | int >=7) # 符合'|' 是jinja2中的过滤器详情见http://docs.jinkan.org/docs/jinja2/templates.html#filters
+#  when: ansible_distribution == 'CentOS' and (ansible_distribution_major_version == "6" or ansible_distribution_major_version == "7")
   tags: etcd
 #  使用以下方式进行匹配 详细值请参阅 https://docs.ansible.com/ansible/2.5/user_guide/playbooks_conditionals.html#ansible-distribution
 # 在2.7中添加了 include-tasks 的module
